@@ -1,8 +1,8 @@
 class Swiftdiagram < Formula
   desc "Generate PlantUML class diagrams from Swift source code with a local web console"
   homepage "https://github.com/LongXiangGuo/SwiftDiagram"
-  url "https://github.com/LongXiangGuo/SwiftDiagram/archive/refs/tags/v1.0.1.tar.gz"
-  sha256 "10bdff300529204dcec50722df41d8dec5c581aa7f3d1adfba7a2a21378d92c7"
+  url "https://github.com/LongXiangGuo/SwiftDiagram/archive/refs/tags/v1.0.2.tar.gz"
+  sha256 "233fe8c7088407453084a27dd183a7af79b14e4061e6e98a1715af4eff7bbd40"
   license "MIT"
 
   depends_on :macos
@@ -17,7 +17,7 @@ class Swiftdiagram < Formula
   end
 
   test do
-    assert_match "1.0.1", shell_output("#{bin}/swiftclassdiagram --version")
+    assert_match "1.0.2", shell_output("#{bin}/swiftclassdiagram --version")
   end
 
   def caveats
