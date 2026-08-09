@@ -126,3 +126,54 @@ func matchGlobs(_ globs: [Glob], in directory: String) -> [URL] {
     enumerate(URL(fileURLWithPath: directory))
     return urls
 }
+
+/// 判断目录下的 Swift 文件是否全部被 `exclude` 模式排除。
+///
+/// 用于 Web 控制台 group 候选目录过滤：目录中不含 Swift 文件或全部文件均被
+/// `files.exclude` 命中时，该目录不应出现在默认分组列表中。
+///
+/// - Parameters:
+///   - directory: 待检查的目录。
+///   - excludePatterns: `files.exclude` 通配符列表。
+///   - root: exclude 相对路径的基准目录（通常为执行目录）。
+/// - Returns: `true` 表示目录下存在 Swift 文件且全部被排除；无 Swift 文件返回 `false`。
+public func isDirectoryExcluded(
+    _ directory: URL,
+    by excludePatterns: [String],
+    relativeTo root: String
+) -> Bool {
+    guard !excludePatterns.isEmpty else { return false }
+    let globs = expandGlobs(excludePatterns.joined(separator: ","), in: root)
+    var swiftFiles: [URL] = []
+    if let enumerator = FileManager.default.enumerator(
+        at: directory,
+        includingPropertiesForKeys: [.isRegularFileKey],
+        options: [.skipsHiddenFiles, .skipsPackageDescendants]
+    ) {
+        for case let url as URL in enumerator where url.pathExtension.lowercased() == "swift" {
+            swiftFiles.append(url)
+        }
+    }
+    guard !swiftFiles.isEmpty else { return false }
+    return swiftFiles.allSatisfy { file in
+        globs.contains { $0.matches(file.path) }
+    }
+}
+
+/// 判断目录下是否存在 Swift 文件（递归）。
+///
+/// - Parameter directory: 待检查的目录。
+/// - Returns: `true` 表示目录内存在 `.swift` 文件。
+public func directoryContainsSwiftFile(_ directory: URL) -> Bool {
+    guard let enumerator = FileManager.default.enumerator(
+        at: directory,
+        includingPropertiesForKeys: [.isRegularFileKey],
+        options: [.skipsHiddenFiles, .skipsPackageDescendants]
+    ) else {
+        return false
+    }
+    for case let url as URL in enumerator where url.pathExtension.lowercased() == "swift" {
+        return true
+    }
+    return false
+}

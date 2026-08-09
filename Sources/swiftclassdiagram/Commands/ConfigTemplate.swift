@@ -69,14 +69,14 @@ enum ConfigTemplate {
     # ---------- 3. 分组设置 (groupSettings) ----------
     # 按文件夹把类型聚合为 UML package；group 级配置可覆盖全局规则。
     groupSettings:
-      # 分组定义（示例，请按项目实际目录调整 folder）
-      groups:
-        - name: Core            # 分组名（package 标题）
-          folder: Sources/Core  # 归属该组的文件夹，支持通配符 *
-          enable: true          # 是否启用该组
-        - name: App
-          folder: Sources/App
-          enable: true
+      # 分组定义。留空 = Web 控制台自动列出执行根目录的一级子目录（默认未启用），
+      # 不含 Swift 文件或被 files.exclude 排除的目录不会列出。按需勾选启用即可。
+      # 如需手动指定分组，可按下方结构填写（folder 支持通配符 *）：
+      # groups:
+      #   - name: Core            # 分组名（package 标题）
+      #     folder: Sources/Core  # 归属该组的文件夹，支持通配符 *
+      #     enable: true          # 是否启用该组
+      groups: []
 
       # group 级 elements 覆盖（优先级最高，仅启用任意 group 时生效）
       elements:

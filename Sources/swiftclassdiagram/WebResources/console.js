@@ -35,8 +35,8 @@ var HELP = {
   'group.folder': '归属该分组的文件夹路径。支持通配符 *，可从下拉列表选择当前目录的一级目录。',
   'group.enable': '开启该分组：绘制 package 并应用 group 级覆盖规则。',
   'groupSettings.elements': 'group 级 elements 覆盖（优先级 P1/P2）。仅当存在至少一个 enable=true 的 group 且下方总开关为 true 时生效。',
-  'groupSettings.elements.enable': 'group 级覆盖总开关。开启后，下方各「覆盖全局」项才会生效。',
-  'groupSettings.elements.override': '勾选「覆盖全局」后设置该值，覆盖全局 elements 配置；不勾选则继承全局。',
+  'groupSettings.elements.enable': 'group 级覆盖总开关。开启后，下方各 override 项才会生效。',
+  'groupSettings.elements.override': '勾选「xxx(override)」后设置该值，覆盖全局 elements 配置；不勾选则继承全局。',
   'groupSettings.elements.exclude': '覆盖全局 exclude 名单。含 $(inherit) token 时 = 继承全局 exclude 并追加。',
   'groupSettings.elements.havingAccessLevel': '覆盖全局「类型访问级别」过滤。',
   'groupSettings.elements.showMembersWithAccessLevel': '覆盖全局「成员访问级别」过滤。',
@@ -186,7 +186,7 @@ var UI = {
       box.dataset.path = path;
       createTagInput(box, {
         values: (value || []),
-        suggestGet: function() { return path.indexOf('files.') === 0 ? Store.dirs : Store.types; },
+        suggestGet: function() { return path.indexOf('files.') === 0 ? (Store.dirs || []).map(function(d) { return d.name; }) : Store.types; },
         placeholder: placeholder || '输入后按 Enter 确认；输入时可联想类名'
       });
       w.appendChild(box);
@@ -329,7 +329,7 @@ var UI = {
     head.appendChild(addBtn);
     w.appendChild(head);
     var hint = UI.el('div', 'hint');
-    hint.textContent = '默认以当前目录一级子目录生成（未启用）。勾选「启用」后分组才会绘制 package。';
+    hint.textContent = '默认以根目录一级子目录生成（未启用）：不含 Swift 文件或被 files.exclude 排除的目录不列出。勾选「启用」后分组才会绘制 package。';
     w.appendChild(hint);
     var list = UI.el('div', 'glist');
     (groups || []).forEach(function(g, i) { list.appendChild(UI.groupCard(g, i)); });
@@ -386,7 +386,7 @@ var UI = {
     master.appendChild(UI.boolField('groupSettings.elements.enable', ge.enable, 'enable — 覆盖总开关', 'groupSettings.elements.enable'));
     w.appendChild(master);
     var hint = UI.el('div', 'hint');
-    hint.textContent = '总开关开启后，下方各项勾选「覆盖全局」才生效；未覆盖的项继承全局 elements。';
+    hint.textContent = '总开关开启后，下方各项勾选「xxx(override)」才生效；未覆盖的项继承全局 elements。';
     w.appendChild(hint);
     var box = UI.el('div', 'nested');
     OVERRIDE_KEYS.forEach(function(k) {
@@ -410,7 +410,7 @@ var UI = {
       body.style.display = cb.checked ? 'block' : 'none';
     };
     lab.appendChild(cb);
-    lab.appendChild(document.createTextNode('覆盖全局'));
+    lab.appendChild(document.createTextNode(key + '(override)'));
     lab.appendChild(UI.helpButton('groupSettings.elements.' + key));
     wrap.appendChild(lab);
     var body = UI.el('div', 'ov-body');
@@ -758,11 +758,9 @@ var Cmd = {
       Store.config = d.config;
       Store.textLoaded = false;
       var groups = d.config && d.config.groupSettings && d.config.groupSettings.groups;
-      if (!groups || !groups.length) {
-        if (Store.dirs.length) {
-          Store.config.groupSettings = Store.config.groupSettings || {};
-          Store.config.groupSettings.groups = Store.dirs.map(function(dir) { return { name: dir, folder: dir, enable: false }; });
-        }
+      if ((!groups || !groups.length) && Store.dirs.length) {
+        Store.config.groupSettings = Store.config.groupSettings || {};
+        Store.config.groupSettings.groups = candidateGroups();
       }
       UI.build();
       done();
@@ -777,9 +775,9 @@ var Cmd = {
         Store.dirs = d.dirs || [];
         fillDirList(Store.dirs);
         var groups = Store.config && Store.config.groupSettings && Store.config.groupSettings.groups;
-        if (Store.config && (!groups || !groups.length) && d.dirs.length) {
+        if (Store.config && (!groups || !groups.length) && Store.dirs.length) {
           Store.config.groupSettings = Store.config.groupSettings || {};
-          Store.config.groupSettings.groups = d.dirs.map(function(dir) { return { name: dir, folder: dir, enable: false }; });
+          Store.config.groupSettings.groups = candidateGroups();
           UI.build();
         }
       }
@@ -1322,6 +1320,12 @@ function cleanup(obj) {
   return obj;
 }
 
+// 从候选目录生成默认 group（仅含 Swift 文件且未被 files.exclude 排除的目录，默认 disable）
+function candidateGroups() {
+  return (Store.dirs || []).filter(function(d) { return d.hasSwift && !d.excluded; })
+    .map(function(d) { return { name: d.name, folder: d.name, enable: false }; });
+}
+
 function fillDirList(dirs) {
   var dl = document.getElementById('dir-list');
   if (!dl) {
@@ -1332,7 +1336,7 @@ function fillDirList(dirs) {
   dl.innerHTML = '';
   dirs.forEach(function(d) {
     var o = UI.el('option');
-    o.value = d;
+    o.value = d.name;
     dl.appendChild(o);
   });
 }

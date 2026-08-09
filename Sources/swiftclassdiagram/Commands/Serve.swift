@@ -203,6 +203,10 @@ final class WebConsole {
     // MARK: - 候选目录（group folder 下拉 / 默认 group 列表）
 
     /// GET /api/dirs：返回当前目录一级子目录（供 group folder 下拉选择与默认 group 列表填充）。
+    ///
+    /// 每个目录附带 `hasSwift`（目录内是否存在 Swift 文件）与 `excluded`
+    /// （目录下 Swift 文件是否全部被 `files.exclude` 排除），前端据此过滤
+    /// 无 Swift 文件或被排除的目录，不生成默认分组。
     func candidateDirs() -> MiniHTTPServer.Response {
         let fm = FileManager.default
         let cwd = URL(fileURLWithPath: fm.currentDirectoryPath)
@@ -213,13 +217,25 @@ final class WebConsole {
         ) else {
             return .json(apiResponse(ok: false, message: "Cannot list directory \(cwd.path)"))
         }
-        let dirs = entries.compactMap { url -> String? in
+        var fileOptions = FileOptions()
+        if let content = try? String(contentsOfFile: configPath, encoding: .utf8),
+           let config = try? YAMLDecoder().decode(Configuration.self, from: content) {
+            fileOptions = config.files
+        }
+        let dirs: [[String: Any]] = entries.compactMap { url -> [String: Any]? in
             let isDir = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
             guard isDir, !url.lastPathComponent.hasPrefix(".") else { return nil }
-            return url.lastPathComponent
-        }.sorted()
-        let items = dirs.map { "\"\($0.replacingOccurrences(of: "\"", with: "\\\""))\"" }.joined(separator: ",")
-        return .json("{\"ok\":true,\"dirs\":[\(items)]}")
+            let name = url.lastPathComponent
+            let excluded = isDirectoryExcluded(url, by: fileOptions.exclude ?? [], relativeTo: cwd.path)
+            return [
+                "name": name,
+                "hasSwift": directoryContainsSwiftFile(url),
+                "excluded": excluded
+            ]
+        }.sorted { ($0["name"] as? String ?? "") < ($1["name"] as? String ?? "") }
+        let jsonData = (try? JSONSerialization.data(withJSONObject: dirs)) ?? Data("[]".utf8)
+        let json = String(data: jsonData, encoding: .utf8) ?? "[]"
+        return .json("{\"ok\":true,\"dirs\":\(json)}")
     }
 
     // MARK: - 静态资源（HTML / CSS / JS 从本地文件加载）
