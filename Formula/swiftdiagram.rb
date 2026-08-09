@@ -17,6 +17,25 @@ class Swiftdiagram < Formula
   end
 
   test do
-    assert_match "1.0.0", shell_output("#{bin}/swiftclassdiagram --version")
+    assert_match "1.0.1", shell_output("#{bin}/swiftclassdiagram --version")
+  end
+
+  def caveats
+    <<~EOS
+      SwiftClassDiagram #{version} 安装完成。
+
+      环境要求：
+        - macOS 13+（Apple Silicon / Intel 均可）
+        - Xcode 命令行工具：xcode-select --install
+        - Swift 工具链（随 CommandLineTools 提供）
+
+      图片渲染依赖（可选，仅 --output browser / serve 预览时使用）：
+        brew install plantuml openjdk graphviz
+
+      快速上手：
+        swiftclassdiagram --help       # 查看全部子命令与用法
+        swiftclassdiagram --version    # 查看当前版本（#{version}）
+        swiftclassdiagram serve        # 启动本地 Web 控制台，浏览器访问 http://localhost:8080
+    EOS
   end
 end
