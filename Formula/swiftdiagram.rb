@@ -1,8 +1,8 @@
 class Swiftdiagram < Formula
   desc "Generate PlantUML class diagrams from Swift source code with a local web console"
   homepage "https://github.com/LongXiangGuo/SwiftDiagram"
-  url "https://github.com/LongXiangGuo/SwiftDiagram/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "79e90f0dd65f57091ea47e13f994fd9baf69e3291498735482666f6f9aa475fe"
+  url "https://github.com/LongXiangGuo/SwiftDiagram/archive/refs/tags/v1.0.1.tar.gz"
+  sha256 "10bdff300529204dcec50722df41d8dec5c581aa7f3d1adfba7a2a21378d92c7"
   license "MIT"
 
   depends_on :macos
