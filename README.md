@@ -30,6 +30,7 @@
     - [`classdiagram`：生成类图](#classdiagram生成类图)
     - [`serve`：本地 Web 控制台](#serve本地-web-控制台)
     - [`report`：复杂度与耦合度量报告](#report复杂度与耦合度量报告)
+    - [`init`：生成配置模板](#init生成配置模板)
     - [其他](#其他)
   - [配置文件 `.swiftplantuml.yml`](#配置文件-swiftplantumlyml)
   - [Web 控制台功能](#web-控制台功能)
@@ -202,6 +203,21 @@ swiftclassdiagram report .
 # JSON 机器可读报告
 swiftclassdiagram report . --format json > report.json
 ```
+
+### `init`：生成配置模板
+
+在当前目录生成一份带完整注释的 `.swiftplantuml.yml` 模板：覆盖 `files` / `elements` / `groupSettings` / `skinparamCommands` 全部板块并逐块说明，可选功能默认关闭（disable），按需打开对应开关即可。
+
+```bash
+swiftclassdiagram init [--path <path>] [--force]
+```
+
+| 选项 | 说明 |
+| :--- | :--- |
+| `-p, --path <path>` | 模板写入路径（默认当前目录 `.swiftplantuml.yml`） |
+| `-f, --force` | 目标文件已存在时强制覆盖 |
+
+> `serve` 启动时若未找到配置文件，也会自动生成一份同样的模板，Web 控制台开箱即用。
 
 ### 其他
 
