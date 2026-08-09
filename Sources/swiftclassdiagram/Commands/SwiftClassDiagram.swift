@@ -10,7 +10,7 @@ struct SwiftClassDiagram: ParsableCommand {
         commandName: "swiftclassdiagram",
         abstract: "Generate PlantUML class diagram scripts from Swift source code (based on SwiftPlantUML, MIT)",
         version: SwiftClassDiagramKit.Version.current.value,
-        subcommands: [ClassDiagram.self, Serve.self, Report.self],
+        subcommands: [ClassDiagram.self, Serve.self, Report.self, Init.self],
         defaultSubcommand: ClassDiagram.self
     )
 }

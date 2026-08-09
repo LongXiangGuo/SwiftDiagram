@@ -20,6 +20,11 @@ extension SwiftClassDiagram {
 
         func run() throws {
             let configPath = config ?? ".swiftplantuml.yml"
+            if !FileManager.default.fileExists(atPath: configPath) {
+                // 本地没有配置文件时自动生成一份模板，保证 Web 控制台开箱即用
+                try ConfigTemplate.write(to: configPath)
+                print("No configuration found at \(configPath), generated a template for you.")
+            }
             let console = WebConsole(configPath: configPath)
 
             let server = try MiniHTTPServer(port: port) { request in
