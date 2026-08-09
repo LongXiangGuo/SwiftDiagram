@@ -1,0 +1,1 @@
+SwiftClassDiagram.main()

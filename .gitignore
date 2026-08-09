@@ -1,0 +1,16 @@
+# Swift Package Manager 构建产物
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Xcode
+*.xcodeproj
+xcuserdata/
+DerivedData/
+
+# 编辑器
+.idea/
+.vscode/
+*.swp

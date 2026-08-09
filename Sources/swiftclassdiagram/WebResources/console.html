@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwiftClassDiagram Web Console</title>
+<link rel="stylesheet" href="/console.css">
+</head>
+<body>
+<header>
+  <h1>SwiftClassDiagram</h1>
+  <span class="path" id="path"></span>
+  <div class="tabs" id="tabs">
+    <button data-mode="form" class="active" onclick="Cmd.switchMode('form')">表单配置</button>
+    <button data-mode="text" onclick="Cmd.switchMode('text')">YAML 源码</button>
+  </div>
+  <button onclick="Cmd.load()">加载</button>
+  <button class="primary" onclick="Cmd.preview()">生成预览</button>
+  <button onclick="Cmd.save()">保存</button>
+  <button id="previewToggle" onclick="Cmd.togglePreview()">预览</button>
+</header>
+<main>
+  <div class="panel left" id="leftPanel">
+    <div class="title">配置编辑（files / elements / groupSettings / skinparamCommands）</div>
+    <div id="formMode"><div id="formRoot"></div></div>
+    <div id="textMode" style="display:none">
+      <textarea id="config" class="code" spellcheck="false" placeholder="加载或输入 YAML 配置"></textarea>
+    </div>
+  </div>
+  <div id="resizer" title="拖拽调整宽度，双击复位"></div>
+  <div class="panel right" id="rightPanel">
+    <div class="title pview-head">
+      <span>PlantUML 预览</span>
+      <div class="pview-tabs">
+        <button class="pv-btn active" data-tab="text" onclick="Cmd.switchView('text')">文本</button>
+        <button class="pv-btn" data-tab="image" onclick="Cmd.switchView('image')">图片</button>
+        <button class="pv-btn" onclick="Cmd.renderImage()">生成图片</button>
+        <button class="pv-btn" id="fsBtn" onclick="Cmd.toggleFullscreen()" title="浏览器全屏预览 (Esc 退出)">全屏</button>
+      </div>
+    </div>
+    <textarea id="script" class="code" readonly spellcheck="false" placeholder="点击「生成预览」查看结果"></textarea>
+    <div id="imageWrap">
+      <div class="img-toolbar">
+        <label class="auto-group" title="关闭时仅渲染「全部」一张全景图">
+          <input type="checkbox" id="autoGroup" checked> 自动生成每个 group 独立图
+        </label>
+      </div>
+      <div id="renderProgress" class="render-progress" style="display:none">
+        <div class="rp-text" id="rpText"></div>
+        <div class="rp-bar"><div class="rp-fill" id="rpFill"></div></div>
+      </div>
+      <div id="imageBox"><p class="img-hint">点击「生成图片」用本地 plantuml 渲染 SVG（含每个启用 group 的独立图）</p></div>
+    </div>
+  </div>
+</main>
+<footer id="status">就绪</footer>
+<div id="toast"></div>
+<div id="tooltip"></div>
+<datalist id="dir-list"></datalist>
+<!-- 全屏图片预览 -->
+<div id="lightbox" class="lb-hidden">
+  <div class="lb-bar">
+    <span class="lb-title" id="lbTitle"></span>
+    <span class="lb-ops">
+      <button id="lbCopy" title="复制图片到剪贴板">复制</button>
+      <button id="lbSave" title="保存图片到本地">保存</button>
+      <button id="lbPan" title="拖动模式：选中后可用鼠标拖动图片，滚轮平移；取消后滚轮缩放">👋</button>
+      <button id="lbZoomOut" title="缩小">−</button>
+      <span class="lb-scale" id="lbScale">100%</span>
+      <button id="lbZoomIn" title="放大">+</button>
+      <button id="lbFit">适应</button>
+      <button id="lbClose" class="lb-close" title="关闭 (Esc)">×</button>
+    </span>
+  </div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+</div>
+<script src="/console.js"></script>
+</body>
+</html>
