@@ -12,9 +12,11 @@ class Swiftdiagram < Formula
     # --disable-sandbox: SwiftPM 需要在构建期拉取 SPM 依赖（SourceKitten 等）
     system "swift", "build", "-c", "release", "--disable-sandbox", "--product", "swiftclassdiagram"
     bin.install ".build/release/swiftclassdiagram"
+    # Web 控制台静态资源随 SPM 资源 bundle 分发，须与二进制同目录（Bundle.module 经 Bundle.main.resourceURL 定位）
+    Dir[".build/release/*.bundle"].each { |bundle| bin.install bundle }
   end
 
   test do
-    assert_match "1.0.0", shell_output("#{bin}/swiftclassdiagram version")
+    assert_match "1.0.0", shell_output("#{bin}/swiftclassdiagram --version")
   end
 end

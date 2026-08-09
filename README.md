@@ -4,7 +4,7 @@
 
 从 Swift 源码生成 PlantUML 类图的开源命令行工具，附带本地 Web 控制台。
 
-基于 [SwiftPlantUML](https://github.com/MarcoEidinger/SwiftPlantUML)（MIT）移植并深度增强。
+基于 [SwiftPlantUML](https://github.com/MarcoEidinger/SwiftPlantUML)（MIT）移植并深度增强以及bug修复。
 
 ![Platform](https://img.shields.io/badge/platform-macOS-2ea44f)
 ![Language](https://img.shields.io/badge/language-Swift%206-orange)
@@ -17,21 +17,24 @@
 
 ## 目录
 
-- [功能特性](#功能特性)
-- [截图与体验](#截图与体验)
-- [工作原理](#工作原理)
-- [安装](#安装)
-  - [方式一：Homebrew（推荐）](#方式一homebrew推荐)
-  - [方式二：源码构建](#方式二源码构建)
-- [快速开始](#快速开始)
-- [命令行使用](#命令行使用)
-  - [`classdiagram`：生成类图](#classdiagram生成类图)
-  - [`serve`：本地 Web 控制台](#serve本地-web-控制台)
-  - [`report`：复杂度与耦合度量报告](#report复杂度与耦合度量报告)
-- [配置文件 `.swiftplantuml.yml`](#配置文件-swiftplantumlyml)
-- [Web 控制台功能](#web-控制台功能)
-- [常见问题 FAQ](#常见问题-faq)
-- [致谢与许可](#致谢与许可)
+- [SwiftClassDiagram](#swiftclassdiagram)
+  - [目录](#目录)
+  - [功能特性](#功能特性)
+  - [截图与体验](#截图与体验)
+  - [工作原理](#工作原理)
+  - [安装](#安装)
+    - [方式一：Homebrew（推荐）](#方式一homebrew推荐)
+    - [方式二：源码构建](#方式二源码构建)
+  - [快速开始](#快速开始)
+  - [命令行使用](#命令行使用)
+    - [`classdiagram`：生成类图](#classdiagram生成类图)
+    - [`serve`：本地 Web 控制台](#serve本地-web-控制台)
+    - [`report`：复杂度与耦合度量报告](#report复杂度与耦合度量报告)
+    - [其他](#其他)
+  - [配置文件 `.swiftplantuml.yml`](#配置文件-swiftplantumlyml)
+  - [Web 控制台功能](#web-控制台功能)
+  - [常见问题 FAQ](#常见问题-faq)
+  - [致谢与许可](#致谢与许可)
 
 ---
 
@@ -205,7 +208,7 @@ swiftclassdiagram report . --format json > report.json
 ### 其他
 
 ```bash
-swiftclassdiagram version   # 显示版本号
+swiftclassdiagram --version   # 显示版本号
 swiftclassdiagram --help    # 查看全部子命令
 ```
 
