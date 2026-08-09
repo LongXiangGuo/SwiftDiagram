@@ -222,9 +222,10 @@ final class WebConsole {
     /// Web 控制台静态资源目录（`Sources/swiftclassdiagram/WebResources`）。
     ///
     /// 查找顺序（全部命中即返回）：
-    /// 1. 真实二进制同目录的 SPM 资源 bundle（brew install / 拷贝安装场景，symlink 解析到 Cellar/bin）
-    /// 2. `Bundle.main` 同目录的 SPM 资源 bundle（直接通过 `/opt/homebrew/bin` symlink 调用时）
-    /// 3. 源码运行（swift run / swift build）兜底：`#filePath` 定位源码目录
+    /// 1. `argv[0]` 解析 symlink 后的真实二进制同目录 bundle（完整路径调用，如 `/opt/homebrew/bin/swiftclassdiagram`）
+    /// 2. `Bundle.main.resourceURL` 同目录 bundle（`argv[0]` 为裸名时 `Bundle.main` 可能定位到 symlink 目录）
+    /// 3. `Bundle.main.executableURL` 解析 symlink 后的真实二进制同目录 bundle（兼容 `argv[0]` 为裸名/相对路径的调用）
+    /// 4. 源码运行（swift run / swift build）兜底：`#filePath` 定位源码目录
     private enum WebResources {
         static let bundleName = "SwiftClassDiagram_swiftclassdiagram"
 
@@ -248,6 +249,11 @@ final class WebConsole {
             }
             if let mainResourceURL = Bundle.main.resourceURL {
                 paths.append(bundleWebResourcesURL(in: mainResourceURL))
+            }
+            // 关键兜底：`argv[0]` 为裸名时，`Bundle.main.executableURL` 仍指向真实二进制（解析 symlink 后取目录）。
+            // 例如 shell 传 `swiftclassdiagram` 而非完整路径时，前两个候选均失效，此项定位到 `Cellar/.../bin`。
+            if let exeURL = Bundle.main.executableURL?.resolvingSymlinksInPath() {
+                paths.append(bundleWebResourcesURL(in: exeURL.deletingLastPathComponent()))
             }
             return paths
         }
