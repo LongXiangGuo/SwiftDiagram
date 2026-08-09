@@ -27,6 +27,13 @@ public struct FileCollector {
         var filesExcluded: [URL] = []
         if let exclude = fileOptions?.exclude, !exclude.isEmpty {
             excluded = expandGlobs(exclude.joined(separator: ","), in: directory)
+            // 合并所有 exclude glob 命中的文件（并集），避免多个 glob 重复追加未排除文件
+            var excludedSet = Set<URL>()
+            excluded.forEach { glob in
+                allFiles.filter { glob.matches($0.path) }.forEach { excludedSet.insert($0) }
+            }
+            filesExcluded = Array(excludedSet)
+            filesNotExcluded = allFiles.filter { !excludedSet.contains($0) }
         } else {
             filesNotExcluded = allFiles
         }
@@ -35,17 +42,14 @@ public struct FileCollector {
             Logger.shared.info("paths will be ignored in favor of configuration  \(fileOptions.description)")
         }
         
-        excluded.forEach { glob in
-            filesExcluded = allFiles.filter { glob.matches($0.path) == true }
-            let notExcluded = allFiles.filter { glob.matches($0.path) == false }
-            filesNotExcluded.append(contentsOf: notExcluded)
-        }
-
         if let include = fileOptions?.include, !include.isEmpty {
             included = expandGlobs(include.joined(separator: ","), in: directory)
+            // 合并所有 include glob 命中的文件（并集），避免多个 glob 命中同一文件时重复
+            var includedSet = Set<URL>()
             included.forEach { glob in
-                files.append(contentsOf: filesNotExcluded.filter { glob.matches($0.path) == true })
+                filesNotExcluded.filter { glob.matches($0.path) }.forEach { includedSet.insert($0) }
             }
+            files = Array(includedSet)
         } else {
             files = allFiles
         }

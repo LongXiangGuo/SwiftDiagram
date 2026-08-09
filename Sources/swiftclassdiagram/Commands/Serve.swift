@@ -220,18 +220,51 @@ final class WebConsole {
     // MARK: - 静态资源（HTML / CSS / JS 从本地文件加载）
 
     /// Web 控制台静态资源目录（`Sources/swiftclassdiagram/WebResources`）。
+    ///
+    /// 查找顺序（全部命中即返回）：
+    /// 1. 真实二进制同目录的 SPM 资源 bundle（brew install / 拷贝安装场景，symlink 解析到 Cellar/bin）
+    /// 2. `Bundle.main` 同目录的 SPM 资源 bundle（直接通过 `/opt/homebrew/bin` symlink 调用时）
+    /// 3. 源码运行（swift run / swift build）兜底：`#filePath` 定位源码目录
     private enum WebResources {
+        static let bundleName = "SwiftClassDiagram_swiftclassdiagram"
+
         static var directory: String {
-            // 打包后运行（brew install / 安装的二进制）：静态资源随 SPM 资源 bundle 分发
-            if let bundleURL = Bundle.module.resourceURL?.appendingPathComponent("WebResources"),
-               FileManager.default.fileExists(atPath: bundleURL.path) {
-                return bundleURL.path
+            let fm = FileManager.default
+            for candidate in candidatePaths where fm.fileExists(atPath: candidate) {
+                return candidate
             }
-            // 源码运行（swift run / swift build）兜底：#filePath 定位源码目录
+            // 源码运行兜底：#filePath 定位源码目录
             return URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent() // Commands/
                 .deletingLastPathComponent() // swiftclassdiagram/
                 .appendingPathComponent("WebResources").path
+        }
+
+        /// 候选目录列表。
+        private static var candidatePaths: [String] {
+            var paths: [String] = []
+            if let binaryDir = executableDirectoryURL {
+                paths.append(bundleWebResourcesURL(in: binaryDir))
+            }
+            if let mainResourceURL = Bundle.main.resourceURL {
+                paths.append(bundleWebResourcesURL(in: mainResourceURL))
+            }
+            return paths
+        }
+
+        /// 在指定目录下定位 `bundleName.bundle/WebResources`。
+        private static func bundleWebResourcesURL(in directory: URL) -> String {
+            directory
+                .appendingPathComponent("\(bundleName).bundle")
+                .appendingPathComponent("WebResources").path
+        }
+
+        /// 真实二进制所在目录（解析 symlink，如 `/opt/homebrew/bin/swiftclassdiagram` → `Cellar/.../bin`）。
+        private static var executableDirectoryURL: URL? {
+            guard let arg0 = CommandLine.arguments.first else { return nil }
+            return URL(fileURLWithPath: arg0)
+                .resolvingSymlinksInPath()
+                .deletingLastPathComponent()
         }
     }
 

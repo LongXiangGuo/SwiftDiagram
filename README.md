@@ -103,16 +103,14 @@ swift build -c release
 ## 快速开始
 
 ```bash
-# 1. 进入你的 Swift 工程目录，编写配置（可选，默认自动发现）
+# 1. 进入你的 Swift 工程目录，编写配置（可选，不写则用全默认值）
 cat > .swiftplantuml.yml <<'EOF'
 elements:
-  include:
-    - type: class
-    - type: struct
-relationships:
-  include:
-    - type: inheritance
-    - type: composition
+  exclude:
+    - "@unchecked Sendable"
+  relationships:
+    composition:
+      toggle: true
 EOF
 
 # 2. 生成 PlantUML 脚本并打印到控制台
@@ -214,47 +212,135 @@ swiftclassdiagram --help    # 查看全部子命令
 
 ## 配置文件 `.swiftplantuml.yml`
 
-控制生成行为的核心文件，位于当前工作目录（或通过 `--config` 指定）：
+控制生成行为的核心文件，位于当前工作目录（或通过 `--config` 指定）。不写配置文件时使用全默认值。
+
+> 以下示例展示了**全部字段**及其默认值，字段可省略（省略即用默认值）。
 
 ```yaml
-# 文件收集
+# ============ 文件收集规则 ============
 files:
-  include: ["**/*.swift"]       # 包含的源文件 glob
-  exclude: [".build", "Tests"]  # 排除的目录/文件
+  include:            # 要分析的 Swift 文件 glob 列表（默认空 = 收集全部）
+    - "**/*.swift"
+  exclude:            # 排除的文件/目录
+    - ".build"
+    - "Tests"
 
-# 元素过滤（绘制哪些类型）
+# ============ 全局元素规则（优先级 P0，最低）============
 elements:
-  include:
-    - type: class
-    - type: struct
-    - type: enum
-    - type: protocol
+  # 排除这些类型及其全部信息（类图、属性、关系等），支持通配符 *
   exclude:
-    - type: class
-      name: ".*Internal.*"
-    - "@unchecked Sendable"     # 排除编译器合成协议幽灵节点
+    - "@unchecked Sendable"      # 例：排除编译器合成的协议幽灵节点
 
-# 关系过滤（绘制哪些连线）
-relationships:
-  include:
-    - type: inheritance
-    - type: composition
-    - type: aggregation
-  exclude:
-    - type: conformance
+  # 控制「类型」本身的可见性过滤：true = 该访问级别的类会被绘制
+  havingAccessLevel:
+    open: true
+    public: true
+    internal: true
+    fileprivate: false
+    private: false
 
-# 访问级别过滤
-accessLevel: ["public", "internal"]
+  # 控制「类的方法和属性」的输出过滤（同上面结构）
+  showMembersWithAccessLevel:
+    open: true
+    public: true
+    internal: true
+    fileprivate: false
+    private: false
 
-# 分组设置（Web 控制台按 group 分图）
+  # 是否展示嵌套类型（默认 false）
+  showNestedTypes: false
+  # 是否展示类的扩展 extension（默认 false）
+  showExtensions: false
+  # 是否展示类引用的范型（默认 false）
+  showGenerics: false
+
+  # 五类关系的开关与排除名单（默认仅 inheritance 开启）
+  relationships:
+    inheritance:          # 继承 + 协议实现（<|-- / <|..）
+      toggle: true
+      exclude: []         # 排除的目标类型名，支持通配符 *
+    association:          # 关联：方法签名引用（-->）
+      toggle: false
+      exclude: []
+    aggregation:          # 聚合：属性/初始化器依赖，非拥有语义（o--）
+      toggle: false
+      exclude: []
+    composition:          # 组合：属性/初始化器依赖，拥有语义（*--）
+      toggle: false
+      exclude: []
+    dependency:           # 扩展依赖：extension 与主类型的连接（<..）
+      toggle: false
+      exclude: []
+
+# ============ 分组设置 ============
 groupSettings:
-  defaultGroupName: "全部"
+  # 分组定义：按文件夹把类型聚合为 UML package
   groups:
-    - name: "Core"
-      tags: ["CoreModule"]
+    - name: Core              # 分组名（package 标题）
+      folder: Sources/Core    # 归属该组的文件夹，支持通配符 *
+      enable: true            # 是否开启该组（false 不绘制 package）
+    - name: App
+      folder: Sources/App
+      enable: true
+
+  # group 级 elements 覆盖（优先级 P1：元素 / P2：relationships，最高）
+  # 仅当存在任意 enable: true 的 group 时才生效
+  elements:
+    enable: false              # 是否启用 group 级覆盖
+    exclude: ["$(inherit)"]    # $(inherit) = 继承全局 exclude 并追加
+    # havingAccessLevel / showMembersWithAccessLevel / showNestedTypes /
+    # showExtensions / showGenerics / relationships 均可在此覆盖（结构同全局 elements）
+
+  # 跨 group 关系规则：不同 group 之间是否允许绘制某类关系
+  crossGroupRelationships:
+    inheritance: true
+    association: false
+    aggregation: false
+    composition: false
+    dependency: false
+    singleLine:                # 跨 group 关系聚合为 group 间单行链接
+      excludeSameGroup: true   # 同组内关系不受影响
+      allGroups: true          # 任意跨 group 关系对只输出一条链接
+
+# ============ PlantUML skinparam 命令 ============
+skinparamCommands:
+  - "skinparam shadow false"
+  - "skinparam classWidth 120"
 ```
 
-> 配置详细字段说明见 Web 控制台内置表单与 [Configuration.swift](Sources/SwiftClassDiagramKit/Configuration/Configuration.swift)。
+### 常用最小配置
+
+```yaml
+# 排除幽灵协议，开启组合关系
+elements:
+  exclude:
+    - "@unchecked Sendable"
+  relationships:
+    composition:
+      toggle: true
+```
+
+### 字段速查
+
+| 字段 | 作用 | 默认值 |
+| :--- | :--- | :--- |
+| `files.include` / `files.exclude` | 收集/排除源文件 | 空（全收集） |
+| `elements.exclude` | 排除类型名单（通配符 `*`） | `[]` |
+| `elements.havingAccessLevel` | 类型可见性过滤（布尔开关） | open/public/internal 开，fileprivate/private 关 |
+| `elements.showMembersWithAccessLevel` | 成员可见性过滤 | 同上 |
+| `elements.showNestedTypes` | 绘制嵌套类型 | `false` |
+| `elements.showExtensions` | 绘制 extension | `false` |
+| `elements.showGenerics` | 绘制范型 | `false` |
+| `elements.relationships.<kind>.toggle` | 五类关系开关（inheritance/association/aggregation/composition/dependency） | 仅 inheritance 开 |
+| `elements.relationships.<kind>.exclude` | 关系排除名单（通配符 `*`） | `[]` |
+| `groupSettings.groups[].name/folder/enable` | 分组名 / 归属文件夹 / 是否开启 | 空 |
+| `groupSettings.elements.enable` | 启用 group 级覆盖 | `false` |
+| `groupSettings.elements.exclude` | group 级排除（`$(inherit)` 表示继承全局并追加） | 继承全局 |
+| `groupSettings.crossGroupRelationships.*` | 跨 group 关系开关 | 全部 `false` |
+| `groupSettings.crossGroupRelationships.singleLine` | 跨 group 单行聚合 | `true`/`true` |
+| `skinparamCommands` | PlantUML skinparam 命令 | 默认两条 |
+
+> 配置字段与代码一一对应，详见 [Configuration.swift](Sources/SwiftClassDiagramKit/Configuration/Configuration.swift) 及同目录下各配置模型文件。
 
 ## Web 控制台功能
 
