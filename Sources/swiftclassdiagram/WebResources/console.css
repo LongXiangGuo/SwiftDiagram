@@ -254,6 +254,23 @@ details.section > .body { padding: 10px; }
 .grow input { flex: 1; }
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: #e8ecf1; color: #57606a; }
 .badge.on { background: #dafbe1; color: #1a7f37; }
+.gfiles {
+  margin-top: 6px;
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  max-height: 200px;
+  overflow: auto;
+  font-size: 12px;
+  color: #57606a;
+}
+.gfiles .gfile {
+  padding: 2px 0 2px 12px;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gfiles .gfile::before { content: '▸'; position: absolute; left: 0; color: #9aa3af; }
 
 /* ---- tag 输入组件（exclude / include）---- */
 .tag-input {

@@ -354,6 +354,10 @@ var UI = {
     head.appendChild(badge);
     var nm = UI.el('b', null, g.name || ('分组 ' + (i + 1)));
     head.appendChild(nm);
+    var filesBtn = UI.el('button', 'small', '文件列表');
+    filesBtn.title = '查看该 group 目录下的 Swift 文件（未启用也可查看）';
+    filesBtn.onclick = function() { Cmd.toggleGroupFiles(i, card); };
+    head.appendChild(filesBtn);
     var del = UI.el('button', 'small', '删除');
     del.onclick = function() { Cmd.removeGroup(i); };
     head.appendChild(del);
@@ -855,6 +859,28 @@ var Cmd = {
   removeGroup: function(i) {
     var groups = Store.config.groupSettings.groups;
     if (groups) { groups.splice(i, 1); UI.build(); }
+  },
+  // 展开/收起 group 目录下的 Swift 文件列表（分组未启用也能查看，便于确认候选内容）
+  toggleGroupFiles: function(i, card) {
+    var existing = card.querySelector('.gfiles');
+    if (existing) { existing.remove(); return; }
+    var folderInput = card.querySelector('[data-gf="folder"]');
+    var folder = (folderInput && folderInput.value.trim()) || '';
+    var box = UI.el('div', 'gfiles');
+    box.textContent = '加载中…';
+    card.appendChild(box);
+    fetch('/api/group-files?folder=' + encodeURIComponent(folder))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        box.innerHTML = '';
+        if (!d.ok) { box.textContent = d.message; return; }
+        var files = d.files || [];
+        if (!files.length) { box.textContent = '（该目录下没有 Swift 文件）'; return; }
+        files.forEach(function(f) {
+          box.appendChild(UI.el('div', 'gfile', f));
+        });
+      })
+      .catch(function() { box.textContent = '加载失败'; });
   },
 
   // ---- 预览面板显隐 ----

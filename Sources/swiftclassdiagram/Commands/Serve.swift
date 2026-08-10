@@ -18,12 +18,17 @@ extension SwiftClassDiagram {
         @Option(help: "Path to configuration file (default: .swiftplantuml.yml in current directory)")
         var config: String?
 
+        @Flag(name: .customLong("custom"), help: "Interactive generation when config is missing (pick directories and groups)")
+        var custom: Bool = false
+
         func run() throws {
             let configPath = config ?? ".swiftplantuml.yml"
             if !FileManager.default.fileExists(atPath: configPath) {
-                // 本地没有配置文件时自动生成一份模板，保证 Web 控制台开箱即用
-                try ConfigTemplate.write(to: configPath)
-                print("No configuration found at \(configPath), generated a template for you.")
+                // 本地没有配置文件时自动生成一份（--custom 交互式，否则自动检测目录），
+                // 保证 Web 控制台开箱即用
+                let yaml = custom ? try ConfigGenerator.interactiveYAML() : ConfigGenerator.nonInteractiveYAML()
+                try yaml.write(toFile: configPath, atomically: true, encoding: .utf8)
+                print("No configuration found at \(configPath), generated one for you.")
             }
             let console = WebConsole(configPath: configPath)
 
@@ -44,6 +49,9 @@ extension SwiftClassDiagram {
                 case ("GET", "/api/dirs"):
                     // 候选目录列表（group folder 下拉 / 默认 group 列表）
                     return console.candidateDirs()
+                case ("GET", "/api/group-files"):
+                    // group 目录下的 Swift 文件列表（未启用也能查看）
+                    return console.groupFiles(folder: request.queryValue("folder") ?? "")
                 case ("GET", "/api/types"):
                     // 类型名列表（tag 输入联想提示）
                     return console.typeCandidates()
@@ -236,6 +244,33 @@ final class WebConsole {
         let jsonData = (try? JSONSerialization.data(withJSONObject: dirs)) ?? Data("[]".utf8)
         let json = String(data: jsonData, encoding: .utf8) ?? "[]"
         return .json("{\"ok\":true,\"dirs\":\(json)}")
+    }
+
+    // MARK: - group 目录文件列表
+
+    /// GET /api/group-files：返回 group 文件夹下的 Swift 文件（相对路径列表）。
+    ///
+    /// 供 Web 控制台展开分组卡片查看文件清单使用；分组未启用也可查看，
+    /// 便于用户了解每个候选目录包含哪些文件再决定是否启用。
+    func groupFiles(folder: String) -> MiniHTTPServer.Response {
+        let fm = FileManager.default
+        let cwd = URL(fileURLWithPath: fm.currentDirectoryPath)
+        let target = folder.isEmpty ? cwd : cwd.appendingPathComponent(folder)
+        guard let enumerator = fm.enumerator(
+            at: target,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else {
+            return .json(apiResponse(ok: false, message: "Cannot enumerate folder \(folder)"))
+        }
+        var files: [String] = []
+        for case let url as URL in enumerator where url.pathExtension.lowercased() == "swift" {
+            files.append(url.path.replacingOccurrences(of: cwd.path + "/", with: ""))
+        }
+        files.sort()
+        let json = (try? JSONEncoder().encode(files)) ?? Data("[]".utf8)
+        let text = String(data: json, encoding: .utf8) ?? "[]"
+        return .json("{\"ok\":true,\"folder\":\"\(folder)\",\"files\":\(text)}")
     }
 
     // MARK: - 静态资源（HTML / CSS / JS 从本地文件加载）
